@@ -1,73 +1,192 @@
-# React + TypeScript + Vite
+# Chrome Built-in AI APIs Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive demonstration of Chrome's experimental Built-in AI APIs, showcasing on-device AI capabilities including translation and text summarization.
 
-Currently, two official plugins are available:
+![Chrome AI Demo](https://img.shields.io/badge/Chrome-127%2B-4285F4?logo=googlechrome&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+### 🌐 Translator API
+- Multi-language translation (16+ languages)
+- Real-time streaming translation
+- Language detection with confidence scores
+- On-device processing for complete privacy
+- Translation history tracking
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🧠 Summarizer API
+- Multiple summary types: TL;DR, Key Points, Teaser, Headline
+- Configurable output formats: Plain Text, Markdown
+- Adjustable summary length: Short, Medium, Long
+- Streaming mode for real-time generation
+- Context-aware summarization
+- Summary history
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
+- Chrome Dev or Chrome Canary (version 127+)
+- Node.js 18+
+- npm or yarn
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd chrome-ai-api-demo
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Enabling Chrome AI APIs
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+#### For Translator API:
+1. Open `chrome://flags`
+2. Search for "Experimental translation API"
+3. Enable the flag
+4. Restart Chrome
+5. Visit `chrome://on-device-translation-internals/`
+6. Install required language packs
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+#### For Summarizer API:
+1. Open `chrome://flags`
+2. Search for "Summarization API for Gemini Nano"
+3. Enable the flag
+4. Restart Chrome
+5. Visit `chrome://components`
+6. Find "Optimization Guide On Device Model"
+7. Click "Check for update"
+
+## Tech Stack
+
+- **React 19** - UI framework
+- **TypeScript 5.9** - Type safety
+- **Vite 7** - Build tool
+- **shadcn/ui** - Component library
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+- **Sonner** - Toast notifications
+
+## Project Structure
+
 ```
+chrome-ai-api-demo/
+├── src/
+│   ├── components/
+│   │   ├── translator.tsx      # Translator API demo
+│   │   ├── summarizer.tsx      # Summarizer API demo
+│   │   └── ui/                 # shadcn/ui components
+│   ├── lib/
+│   │   └── utils.ts            # Utility functions
+│   ├── App.tsx                 # Main application
+│   ├── main.tsx               # Entry point
+│   └── index.css              # Global styles
+├── SUMMARIZER_README.md       # Detailed Summarizer docs
+└── README.md                  # This file
+```
+
+## Component Documentation
+
+### Translator Component
+See the component file for full TypeScript interfaces and implementation details.
+
+Key features:
+- 16 supported languages with flag indicators
+- Streaming and batch translation modes
+- Automatic language detection
+- Download progress monitoring
+- Input quota management
+
+### Summarizer Component
+See [SUMMARIZER_README.md](./SUMMARIZER_README.md) for comprehensive documentation.
+
+Key features:
+- 4 summary types (TL;DR, Key Points, Teaser, Headline)
+- 2 output formats (Plain Text, Markdown)
+- 3 length options (Short, Medium, Long)
+- Streaming mode support
+- Context-aware summarization
+
+## Privacy & Security
+
+**100% On-Device Processing**
+- All AI operations happen locally in your browser
+- No data is sent to external servers
+- Complete privacy and security
+- Works offline (after model download)
+
+## Browser Compatibility
+
+| Feature | Chrome Version | Status |
+|---------|---------------|--------|
+| Translator API | 138+ | Experimental |
+| Summarizer API | 127+ | Experimental |
+| Language Detector | 138+ | Experimental |
+
+## Known Limitations
+
+- APIs are experimental and may change
+- Requires specific Chrome versions
+- Model downloads required (100-200MB)
+- Some features may not work in all configurations
+- Limited to supported languages/formats
+
+## Development
+
+### Available Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
+
+### Building Components
+
+This project uses shadcn/ui for components. To add new components:
+
+```bash
+npx shadcn@latest add [component-name]
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## Resources
+
+- [Chrome Built-in AI Documentation](https://developer.chrome.com/docs/ai/built-in)
+- [Translation API Explainer](https://github.com/WICG/translation-api)
+- [Summarization API Explainer](https://github.com/explainers-by-googlers/writing-assistance-apis)
+- [shadcn/ui Documentation](https://ui.shadcn.com)
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Acknowledgments
+
+- Chrome team for the experimental AI APIs
+- shadcn for the beautiful UI components
+- Vercel for Vite and Next.js inspiration
+
+---
+
+**Note**: These are experimental APIs and are subject to change. Always check the official Chrome documentation for the latest information.
