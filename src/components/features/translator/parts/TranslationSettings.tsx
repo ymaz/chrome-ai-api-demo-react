@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { ArrowRight, Download } from "lucide-react";
+import { ArrowLeftRight, Download } from "lucide-react";
 import { LANGUAGES } from "../shared/constants";
 
 type Props = {
@@ -70,7 +70,7 @@ const TranslationSettings: React.FC<Props> = ({
               onClick={swapLanguages}
               className="rounded-full"
             >
-              <ArrowRight className="h-4 w-4" />
+              <ArrowLeftRight className="h-4 w-4" />
             </Button>
           </div>
           <div className="space-y-2">

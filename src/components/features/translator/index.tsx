@@ -213,12 +213,12 @@ export const TranslatorFeatureComponent: React.FC = () => {
           };
           monitor.addEventListener(
             "downloadprogress",
-            onProgress as EventListener
+            onProgress as EventListener,
           );
           cleanup = () =>
             monitor.removeEventListener(
               "downloadprogress",
-              onProgress as EventListener
+              onProgress as EventListener,
             );
         },
       } as TranslatorOptions);
@@ -257,7 +257,7 @@ export const TranslatorFeatureComponent: React.FC = () => {
         }
         toast.success("Language detected!", {
           description: `Detected ${resolveLanguageName(
-            detectedCodeRaw
+            detectedCodeRaw,
           )} with ${(topResult.confidence * 100).toFixed(1)}% confidence`,
         });
         return { lang: detectedCode, conf: topResult.confidence };
@@ -302,7 +302,7 @@ export const TranslatorFeatureComponent: React.FC = () => {
       let finalText = "";
       if (state.streamingMode) {
         const stream = translatorRef.current.translateStreaming(
-          state.inputText
+          state.inputText,
         );
         const reader = stream.getReader();
         let fullText = "";
@@ -506,7 +506,7 @@ export const TranslatorFeatureComponent: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-500" />
+              <Zap className="h-5 w-5" />
               Real-Time Translation
             </CardTitle>
           </CardHeader>
@@ -520,7 +520,7 @@ export const TranslatorFeatureComponent: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5" />
               Privacy First
             </CardTitle>
           </CardHeader>

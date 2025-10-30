@@ -1,6 +1,6 @@
 import "./App.css";
-import { TranslatorFeatureComponent as Translator } from "./components/features/translator";
-import Summarizer from "./components/summarizer";
+import { TranslatorFeatureComponent as Translator } from "@/components/features/translator";
+import { SummarizerFeatureComponent as Summarizer } from "@/components/features/summarizer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
