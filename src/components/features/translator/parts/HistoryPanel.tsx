@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { LANGUAGES } from "../shared/constants";
+import { LANGUAGES } from "../constants";
 
 type HistoryItem = {
   source: string;

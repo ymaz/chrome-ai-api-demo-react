@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, CheckCircle } from "lucide-react";
-import { LANGUAGES } from "../shared/constants";
+import { LANGUAGES } from "../constants";
 
 type Props = {
   inputText: string;

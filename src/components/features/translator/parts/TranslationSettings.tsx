@@ -13,7 +13,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeftRight, Download } from "lucide-react";
-import { LANGUAGES } from "../shared/constants";
+import { LANGUAGES } from "../constants";
 
 type Props = {
   sourceLanguage: string;

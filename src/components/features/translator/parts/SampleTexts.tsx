@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LANGUAGES, SAMPLE_TEXTS } from "../shared/constants";
+import { LANGUAGES, SAMPLE_TEXTS } from "../constants";
 
 type Props = {
   onLoadSample: (sample: (typeof SAMPLE_TEXTS)[0]) => void;
