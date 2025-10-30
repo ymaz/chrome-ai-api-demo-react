@@ -7,8 +7,6 @@ import { Copy, Languages, Loader2 } from "lucide-react";
 type Props = {
   inputText: string;
   setInputText: (v: string) => void;
-  detectLanguage: () => void;
-  isDetecting: boolean;
   isTranslating: boolean;
   streamingMode: boolean;
   streamedText: string;
@@ -21,8 +19,6 @@ type Props = {
 const TranslationIO: React.FC<Props> = ({
   inputText,
   setInputText,
-  detectLanguage,
-  isDetecting,
   isTranslating,
   streamingMode,
   streamedText,
@@ -36,20 +32,7 @@ const TranslationIO: React.FC<Props> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Input Text</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={detectLanguage}
-                disabled={!inputText || isDetecting}
-              >
-                {isDetecting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : null}
-                Auto-Detect
-              </Button>
-            </div>
+            <CardTitle>Input Text</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea

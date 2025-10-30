@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useReducer } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import {
   Card,
@@ -36,96 +36,198 @@ import type {
   TranslatorOptions,
 } from "./shared/types";
 
+type UIState = {
+  sourceLanguage: string;
+  targetLanguage: string;
+  inputText: string;
+  translatedText: string;
+  streamedText: string;
+  streamingMode: boolean;
+  isTranslating: boolean;
+  isDownloading: boolean;
+  downloadProgress: number;
+  translationHistory: Array<{
+    source: string;
+    target: string;
+    original: string;
+    translated: string;
+    timestamp: string; // ISO string for portability
+  }>;
+};
+
+type UIAction =
+  | { type: "setSourceLanguage"; payload: string }
+  | { type: "setTargetLanguage"; payload: string }
+  | { type: "setInputText"; payload: string }
+  | { type: "setTranslatedText"; payload: string }
+  | { type: "setStreamedText"; payload: string }
+  | { type: "setStreamingMode"; payload: boolean }
+  | { type: "setIsTranslating"; payload: boolean }
+  | { type: "setIsDownloading"; payload: boolean }
+  | { type: "setDownloadProgress"; payload: number }
+  | {
+      type: "addTranslationHistory";
+      payload: UIState["translationHistory"][number];
+    }
+  | { type: "clearTexts" }
+  | { type: "swapLanguages" };
+
+// Symbol for translator cleanup for progress listeners
+const cleanupSymbol = Symbol("progressCleanup");
+
 export const TranslatorFeatureComponent: React.FC = () => {
-  const [isSupported, setIsSupported] = useState<boolean>(false);
-  const [sourceLanguage, setSourceLanguage] = useState<string>("en");
-  const [targetLanguage, setTargetLanguage] = useState<string>("es");
-  const [inputText, setInputText] = useState<string>("");
-  const [translatedText, setTranslatedText] = useState<string>("");
-  const [detectedLanguage, setDetectedLanguage] = useState<string>("");
-  const [detectionConfidence, setDetectionConfidence] = useState<number>(0);
-  const [isTranslating, setIsTranslating] = useState<boolean>(false);
-  const [isDetecting, setIsDetecting] = useState<boolean>(false);
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [isDownloading, setIsDownloading] = useState<boolean>(false);
-  const [streamingMode, setStreamingMode] = useState<boolean>(false);
-  const [streamedText, setStreamedText] = useState<string>("");
-  const [translatorStatus, setTranslatorStatus] = useState<string>("");
-  const [detectorStatus, setDetectorStatus] = useState<string>("");
-  const [translationHistory, setTranslationHistory] = useState<
-    Array<{
-      source: string;
-      target: string;
-      original: string;
-      translated: string;
-      timestamp: Date;
-    }>
-  >([]);
+  // Simple feature presence checks per docs
+  // https://developer.chrome.com/docs/ai/translator-api
+  // https://developer.chrome.com/docs/ai/language-detection
+  const hasTranslator = "Translator" in self;
+  const hasLanguageDetector = "LanguageDetector" in self;
+  const isSupported = hasTranslator;
 
-  const translatorRef = useRef<Translator | null>(null);
-  const detectorRef = useRef<LanguageDetector | null>(null);
-
-  useEffect(() => {
-    checkAPISupport();
-    return () => {
-      if (translatorRef.current) {
-        translatorRef.current.destroy();
-      }
-    };
-  }, []);
-
-  const checkAPISupport = async () => {
-    const hasTranslator = "Translator" in self;
-    const hasLanguageDetector = "LanguageDetector" in self;
-
-    // Drive overall support by the Translator API presence
-    setIsSupported(hasTranslator);
-
-    // Drive status badges by simple presence checks per docs
-    // https://developer.chrome.com/docs/ai/translator-api
-    // https://developer.chrome.com/docs/ai/language-detection
-    setTranslatorStatus(hasTranslator ? "available" : "no");
-    setDetectorStatus(hasLanguageDetector ? "available" : "no");
-
-    // Initialize detector if present so detection can be used immediately
-    if (hasLanguageDetector) {
-      try {
-        detectorRef.current = await window.LanguageDetector!.create();
-        await detectorRef.current.ready;
-      } catch (error) {
-        console.error("Failed to create language detector:", error);
-      }
+  const reducer = (state: UIState, action: UIAction): UIState => {
+    switch (action.type) {
+      case "setSourceLanguage":
+        return { ...state, sourceLanguage: action.payload };
+      case "setTargetLanguage":
+        return { ...state, targetLanguage: action.payload };
+      case "setInputText":
+        return { ...state, inputText: action.payload };
+      case "setTranslatedText":
+        return { ...state, translatedText: action.payload };
+      case "setStreamedText":
+        return { ...state, streamedText: action.payload };
+      case "setStreamingMode":
+        return { ...state, streamingMode: action.payload };
+      case "setIsTranslating":
+        return { ...state, isTranslating: action.payload };
+      case "setIsDownloading":
+        return { ...state, isDownloading: action.payload };
+      case "setDownloadProgress":
+        return { ...state, downloadProgress: action.payload };
+      case "addTranslationHistory":
+        return {
+          ...state,
+          translationHistory: [
+            action.payload,
+            ...state.translationHistory.slice(0, 9),
+          ],
+        };
+      case "clearTexts":
+        return {
+          ...state,
+          inputText: "",
+          translatedText: "",
+          streamedText: "",
+        };
+      case "swapLanguages":
+        return {
+          ...state,
+          sourceLanguage: state.targetLanguage,
+          targetLanguage: state.sourceLanguage,
+          inputText: state.translatedText,
+          translatedText: state.inputText,
+        };
+      default:
+        return state;
     }
   };
 
-  // With simplified presence checks, re-checking on language changes is unnecessary.
-  // If desired, we could re-check only when overall support flips, but in practice
-  // support won't change during a session, so we omit this effect.
+  const [state, dispatch] = useReducer(reducer, {
+    sourceLanguage: "en",
+    targetLanguage: "es",
+    inputText: "",
+    translatedText: "",
+    streamedText: "",
+    streamingMode: false,
+    isTranslating: false,
+    isDownloading: false,
+    downloadProgress: 0,
+    translationHistory: [],
+  });
+
+  const translatorRef = useRef<
+    (Translator & { [cleanupSymbol]?: () => void }) | null
+  >(null);
+  const detectorRef = useRef<LanguageDetector | null>(null);
+
+  useEffect(() => {
+    // Initialize detector if present so detection can be used immediately
+    const abortController = new AbortController();
+    const { signal } = abortController;
+    const init = async () => {
+      if (!hasLanguageDetector || signal.aborted) return;
+      try {
+        const detector = await window.LanguageDetector!.create();
+        if (signal.aborted) {
+          // Best-effort cleanup if API provides destroy
+          try {
+            (detector as unknown as { destroy?: () => void }).destroy?.();
+          } catch {
+            // ignore
+          }
+          return;
+        }
+        detectorRef.current = detector;
+        await detectorRef.current.ready;
+      } catch (error) {
+        if (!signal.aborted) {
+          console.error("Failed to create language detector:", error);
+        }
+      }
+    };
+    init();
+    return () => {
+      abortController.abort();
+      if (translatorRef.current) {
+        translatorRef.current[cleanupSymbol]?.();
+        translatorRef.current.destroy();
+      }
+    };
+    // hasLanguageDetector is static for a session
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const createTranslator = async () => {
     if (!window.Translator) return null;
+    let downloadDone = false; // prevents duplicate toasts
+    let cleanup = () => {};
     try {
-      setIsDownloading(true);
-      setDownloadProgress(0);
+      dispatch({ type: "setIsDownloading", payload: true });
+      dispatch({ type: "setDownloadProgress", payload: 0 });
       const translator = await window.Translator.create({
-        sourceLanguage,
-        targetLanguage,
-        monitor(monitor) {
-          monitor.addEventListener("downloadprogress", (event) => {
-            const progress = (event.loaded / event.total) * 100;
-            setDownloadProgress(progress);
-            if (progress === 100) {
-              setIsDownloading(false);
+        sourceLanguage: state.sourceLanguage,
+        targetLanguage: state.targetLanguage,
+        monitor(monitor: EventTarget) {
+          // Use string type for correct event typing
+          const onProgress = (event: Event) => {
+            // Cast to correct type from our types
+            const dp = event as unknown as { loaded: number; total: number };
+            const progress = (dp.loaded / dp.total) * 100;
+            dispatch({ type: "setDownloadProgress", payload: progress });
+            if (progress === 100 && !downloadDone) {
+              downloadDone = true;
+              dispatch({ type: "setIsDownloading", payload: false });
               toast.success("Language pack ready!", {
-                description: `${sourceLanguage} → ${targetLanguage} translation model downloaded successfully.`,
+                description: `${state.sourceLanguage} → ${state.targetLanguage} translation model downloaded successfully.`,
               });
             }
-          });
+          };
+          monitor.addEventListener(
+            "downloadprogress",
+            onProgress as EventListener
+          );
+          cleanup = () =>
+            monitor.removeEventListener(
+              "downloadprogress",
+              onProgress as EventListener
+            );
         },
       } as TranslatorOptions);
-      return translator;
+      (translator as Translator & { [cleanupSymbol]?: () => void })[
+        cleanupSymbol
+      ] = cleanup;
+      return translator as Translator & { [cleanupSymbol]?: () => void };
     } catch (error) {
-      setIsDownloading(false);
+      dispatch({ type: "setIsDownloading", payload: false });
       console.error("Failed to create translator:", error);
       toast.error("Error creating translator", {
         description:
@@ -135,11 +237,11 @@ export const TranslatorFeatureComponent: React.FC = () => {
     }
   };
 
-  const detectLanguage = async () => {
-    if (!detectorRef.current || !inputText) return;
-    setIsDetecting(true);
+  // New detection handler to hand off to DetectionPanel
+  const handleDetectLanguage = async (text: string) => {
+    if (!detectorRef.current || !text) return null;
     try {
-      const results = await detectorRef.current.detect(inputText);
+      const results = await detectorRef.current.detect(text);
       if (results && results.length > 0) {
         const topResult = results[0] as {
           language?: string;
@@ -151,42 +253,43 @@ export const TranslatorFeatureComponent: React.FC = () => {
           topResult.language || topResult.detectedLanguage || topResult.lang;
         const detectedCode = normalizeToPrimaryTag(detectedCodeRaw);
         if (detectedCode) {
-          setDetectedLanguage(detectedCode);
-          setSourceLanguage(detectedCode);
+          dispatch({ type: "setSourceLanguage", payload: detectedCode });
         }
-        setDetectionConfidence(topResult.confidence);
         toast.success("Language detected!", {
           description: `Detected ${resolveLanguageName(
             detectedCodeRaw
           )} with ${(topResult.confidence * 100).toFixed(1)}% confidence`,
         });
+        return { lang: detectedCode, conf: topResult.confidence };
       }
+      toast.error("Detection failed", {
+        description: "Could not detect language",
+      });
+      return null;
     } catch (error) {
-      console.error("Language detection failed:", error);
       toast.error("Detection failed", {
         description:
           error instanceof Error ? error.message : "Could not detect language",
       });
-    } finally {
-      setIsDetecting(false);
+      return null;
     }
   };
 
   const translateText = async () => {
-    if (!inputText) {
+    if (!state.inputText) {
       toast.error("No text to translate", {
         description: "Please enter some text to translate",
       });
       return;
     }
-    setIsTranslating(true);
-    setTranslatedText("");
-    setStreamedText("");
+    dispatch({ type: "setIsTranslating", payload: true });
+    dispatch({ type: "setTranslatedText", payload: "" });
+    dispatch({ type: "setStreamedText", payload: "" });
     try {
       if (
         !translatorRef.current ||
-        translatorRef.current.sourceLanguage !== sourceLanguage ||
-        translatorRef.current.targetLanguage !== targetLanguage
+        translatorRef.current.sourceLanguage !== state.sourceLanguage ||
+        translatorRef.current.targetLanguage !== state.targetLanguage
       ) {
         if (translatorRef.current) {
           translatorRef.current.destroy();
@@ -197,42 +300,45 @@ export const TranslatorFeatureComponent: React.FC = () => {
         throw new Error("Failed to create translator");
       }
       let finalText = "";
-      if (streamingMode) {
-        const stream = translatorRef.current.translateStreaming(inputText);
+      if (state.streamingMode) {
+        const stream = translatorRef.current.translateStreaming(
+          state.inputText
+        );
         const reader = stream.getReader();
         let fullText = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           fullText += value;
-          setStreamedText(fullText);
+          dispatch({ type: "setStreamedText", payload: fullText });
         }
-        setTranslatedText(fullText);
+        dispatch({ type: "setTranslatedText", payload: fullText });
         finalText = fullText;
       } else {
-        const result = await translatorRef.current.translate(inputText);
-        setTranslatedText(result);
+        const result = await translatorRef.current.translate(state.inputText);
+        dispatch({ type: "setTranslatedText", payload: result });
         finalText = result;
       }
-      const historyEntry = {
-        source: sourceLanguage,
-        target: targetLanguage,
-        original: inputText,
-        translated: finalText || streamedText,
-        timestamp: new Date(),
-      };
-      setTranslationHistory((prev) => [historyEntry, ...prev.slice(0, 9)]);
+      dispatch({
+        type: "addTranslationHistory",
+        payload: {
+          source: state.sourceLanguage,
+          target: state.targetLanguage,
+          original: state.inputText,
+          translated: finalText || state.streamedText,
+          timestamp: new Date().toISOString(), // Consistently as ISO string
+        },
+      });
       toast.success("Translation complete!", {
-        description: `Translated from ${sourceLanguage} to ${targetLanguage}`,
+        description: `Translated from ${state.sourceLanguage} to ${state.targetLanguage}`,
       });
     } catch (error) {
-      console.error("Translation failed:", error);
       toast.error("Translation failed", {
         description:
           error instanceof Error ? error.message : "Unknown error occurred",
       });
     } finally {
-      setIsTranslating(false);
+      dispatch({ type: "setIsTranslating", payload: false });
     }
   };
 
@@ -241,16 +347,11 @@ export const TranslatorFeatureComponent: React.FC = () => {
     toast.success("Copied!", { description: "Text copied to clipboard" });
   };
 
-  const swapLanguages = () => {
-    setSourceLanguage(targetLanguage);
-    setTargetLanguage(sourceLanguage);
-    setInputText(translatedText);
-    setTranslatedText(inputText);
-  };
+  // swapLanguages handled in reducer
 
   const loadSampleText = (sample: (typeof SAMPLE_TEXTS)[0]) => {
-    setInputText(sample.text);
-    setSourceLanguage(sample.lang);
+    dispatch({ type: "setInputText", payload: sample.text });
+    dispatch({ type: "setSourceLanguage", payload: sample.lang });
   };
 
   if (!isSupported) {
@@ -315,19 +416,11 @@ export const TranslatorFeatureComponent: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <Badge
-                variant={
-                  translatorStatus === "available" ? "default" : "secondary"
-                }
-              >
-                Translator API: {translatorStatus || "checking..."}
+              <Badge variant={hasTranslator ? "default" : "secondary"}>
+                Translator API: {hasTranslator ? "available" : "no"}
               </Badge>
-              <Badge
-                variant={
-                  detectorStatus === "available" ? "default" : "secondary"
-                }
-              >
-                Detector API: {detectorStatus || "checking..."}
+              <Badge variant={hasLanguageDetector ? "default" : "secondary"}>
+                Detector API: {hasLanguageDetector ? "available" : "no"}
               </Badge>
             </div>
           </div>
@@ -352,49 +445,46 @@ export const TranslatorFeatureComponent: React.FC = () => {
 
         <TabsContent value="translate" className="space-y-4">
           <TranslationSettings
-            sourceLanguage={sourceLanguage}
-            targetLanguage={targetLanguage}
-            setSourceLanguage={setSourceLanguage}
-            setTargetLanguage={setTargetLanguage}
-            streamingMode={streamingMode}
-            setStreamingMode={setStreamingMode}
-            isDownloading={isDownloading}
-            downloadProgress={downloadProgress}
-            swapLanguages={swapLanguages}
+            sourceLanguage={state.sourceLanguage}
+            targetLanguage={state.targetLanguage}
+            setSourceLanguage={(v) =>
+              dispatch({ type: "setSourceLanguage", payload: v })
+            }
+            setTargetLanguage={(v) =>
+              dispatch({ type: "setTargetLanguage", payload: v })
+            }
+            streamingMode={state.streamingMode}
+            setStreamingMode={(v) =>
+              dispatch({ type: "setStreamingMode", payload: v })
+            }
+            isDownloading={state.isDownloading}
+            downloadProgress={state.downloadProgress}
+            swapLanguages={() => dispatch({ type: "swapLanguages" })}
           />
           <TranslationIO
-            inputText={inputText}
-            setInputText={setInputText}
-            detectLanguage={detectLanguage}
-            isDetecting={isDetecting}
-            isTranslating={isTranslating}
-            streamingMode={streamingMode}
-            streamedText={streamedText}
-            translatedText={translatedText}
+            inputText={state.inputText}
+            setInputText={(v) => dispatch({ type: "setInputText", payload: v })}
+            isTranslating={state.isTranslating}
+            streamingMode={state.streamingMode}
+            streamedText={state.streamedText}
+            translatedText={state.translatedText}
             copyToClipboard={copyToClipboard}
             translateText={translateText}
-            clearAll={() => {
-              setInputText("");
-              setTranslatedText("");
-              setStreamedText("");
-            }}
+            clearAll={() => dispatch({ type: "clearTexts" })}
           />
           <SampleTexts onLoadSample={loadSampleText} />
         </TabsContent>
 
         <TabsContent value="detect" className="space-y-4">
           <DetectionPanel
-            inputText={inputText}
-            setInputText={setInputText}
-            detectLanguage={detectLanguage}
-            isDetecting={isDetecting}
-            detectedLanguage={detectedLanguage}
-            detectionConfidence={detectionConfidence}
+            inputText={state.inputText}
+            setInputText={(v) => dispatch({ type: "setInputText", payload: v })}
+            onDetect={handleDetectLanguage}
           />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          <HistoryPanel translationHistory={translationHistory} />
+          <HistoryPanel translationHistory={state.translationHistory} />
         </TabsContent>
       </Tabs>
 

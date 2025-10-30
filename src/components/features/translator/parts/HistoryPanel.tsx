@@ -1,8 +1,14 @@
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, SeparatorHorizontal } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { LANGUAGES } from "../shared/constants";
 
@@ -11,7 +17,7 @@ type HistoryItem = {
   target: string;
   original: string;
   translated: string;
-  timestamp: Date;
+  timestamp: string; // Was Date, now string ISO
 };
 
 type Props = {
@@ -59,7 +65,9 @@ const HistoryPanel: React.FC<Props> = ({ translationHistory }) => {
                       <p className="text-sm">{item.translated}</p>
                     </div>
                   </div>
-                  {index < translationHistory.length - 1 && <Separator className="my-2" />}
+                  {index < translationHistory.length - 1 && (
+                    <Separator className="my-2" />
+                  )}
                 </div>
               ))}
             </div>
@@ -71,5 +79,3 @@ const HistoryPanel: React.FC<Props> = ({ translationHistory }) => {
 };
 
 export default HistoryPanel;
-
-
