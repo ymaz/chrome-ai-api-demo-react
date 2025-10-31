@@ -83,39 +83,96 @@ npm run build
 chrome-ai-api-demo/
 ├── src/
 │   ├── components/
-│   │   ├── translator.tsx      # Translator API demo
-│   │   ├── summarizer.tsx      # Summarizer API demo
-│   │   └── ui/                 # shadcn/ui components
+│   │   ├── features/
+│   │   │   ├── translator/
+│   │   │   │   ├── hooks/
+│   │   │   │   │   ├── translatorState.ts    # State management
+│   │   │   │   │   └── useTranslator.ts      # Main translator hook
+│   │   │   │   ├── parts/
+│   │   │   │   │   ├── DetectionPanel.tsx
+│   │   │   │   │   ├── HistoryPanel.tsx
+│   │   │   │   │   ├── SampleTexts.tsx
+│   │   │   │   │   ├── TranslationIO.tsx
+│   │   │   │   │   └── TranslationSettings.tsx
+│   │   │   │   ├── constants.ts              # Language constants
+│   │   │   │   ├── types.ts                  # TypeScript types
+│   │   │   │   └── index.tsx                 # Main component
+│   │   │   └── summarizer/
+│   │   │       ├── hooks/
+│   │   │       │   ├── summarizerState.ts    # State management
+│   │   │       │   └── useSummarizer.ts      # Main summarizer hook
+│   │   │       ├── parts/
+│   │   │       │   ├── HistoryPanel.tsx
+│   │   │       │   ├── SampleTexts.tsx
+│   │   │       │   ├── SummarizationIO.tsx
+│   │   │       │   └── SummarizationSettings.tsx
+│   │   │       ├── constants.ts              # Summary type constants
+│   │   │       ├── types.ts                  # TypeScript types
+│   │   │       └── index.tsx                 # Main component
+│   │   └── ui/                               # shadcn/ui components
 │   ├── lib/
-│   │   └── utils.ts            # Utility functions
-│   ├── App.tsx                 # Main application
-│   ├── main.tsx               # Entry point
-│   └── index.css              # Global styles
-├── SUMMARIZER_README.md       # Detailed Summarizer docs
-└── README.md                  # This file
+│   │   └── utils.ts                          # Utility functions
+│   ├── App.tsx                               # Main application
+│   ├── main.tsx                              # Entry point
+│   └── index.css                             # Global styles
+├── SUMMARIZER_README.md                      # Detailed Summarizer docs
+└── README.md                                 # This file
 ```
+
+## Architecture
+
+Both features follow a consistent, modular architecture pattern:
+
+### Feature Structure
+Each feature (translator, summarizer) is organized as follows:
+
+- **`hooks/`** - Custom React hooks for state and business logic
+  - `*State.ts` - State management with useReducer (actions, reducer, initial state)
+  - `use*.ts` - Main feature hook encapsulating all logic
+- **`parts/`** - UI sub-components (settings, I/O, history, samples)
+- **`constants.ts`** - Feature-specific constants and configurations
+- **`types.ts`** - TypeScript type definitions and API interfaces
+- **`index.tsx`** - Main component that composes everything together
+
+### Design Principles
+- **Separation of Concerns**: Business logic separated from UI components
+- **Code Splitting**: Logical organization for better maintainability
+- **Type Safety**: Comprehensive TypeScript types throughout
+- **Reusable Hooks**: Encapsulated state management and side effects
+- **Consistent Patterns**: Both features follow identical structure
 
 ## Component Documentation
 
 ### Translator Component
-See the component file for full TypeScript interfaces and implementation details.
 
-Key features:
+**Architecture:**
+- `useTranslator` hook manages translation state, API interactions, and language detection
+- Clean separation between state management (`translatorState.ts`) and business logic (`useTranslator.ts`)
+- Modular UI components in `parts/` directory
+
+**Key Features:**
 - 16 supported languages with flag indicators
 - Streaming and batch translation modes
-- Automatic language detection
+- Automatic language detection with confidence scores
 - Download progress monitoring
+- Translation history tracking
 - Input quota management
 
 ### Summarizer Component
 See [SUMMARIZER_README.md](./SUMMARIZER_README.md) for comprehensive documentation.
 
-Key features:
+**Architecture:**
+- `useSummarizer` hook manages summarization state and API interactions
+- Clean separation between state management (`summarizerState.ts`) and business logic (`useSummarizer.ts`)
+- Modular UI components in `parts/` directory
+
+**Key Features:**
 - 4 summary types (TL;DR, Key Points, Teaser, Headline)
 - 2 output formats (Plain Text, Markdown)
 - 3 length options (Short, Medium, Long)
 - Streaming mode support
 - Context-aware summarization
+- Summary history tracking
 
 ## Privacy & Security
 
