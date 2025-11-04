@@ -1,6 +1,5 @@
 import "./App.css";
-import { TranslatorFeatureComponent as Translator } from "@/components/features/translator";
-import { SummarizerFeatureComponent as Summarizer } from "@/components/features/summarizer";
+import { lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -9,7 +8,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Languages, Brain, Sparkles } from "lucide-react";
+import { Languages, Brain, Sparkles, Loader2 } from "lucide-react";
+
+// Lazy load feature components
+const Translator = lazy(() =>
+  import("@/components/features/translator").then(module => ({
+    default: module.TranslatorFeatureComponent
+  }))
+);
+const Summarizer = lazy(() =>
+  import("@/components/features/summarizer").then(module => ({
+    default: module.SummarizerFeatureComponent
+  }))
+);
+
+// Loading fallback component
+function FeatureLoadingFallback() {
+  return (
+    <Card>
+      <CardContent className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p>Loading feature...</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function App() {
   return (
@@ -63,11 +88,15 @@ function App() {
           </TabsList>
 
           <TabsContent value="translator" className="space-y-4">
-            <Translator />
+            <Suspense fallback={<FeatureLoadingFallback />}>
+              <Translator />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="summarizer" className="space-y-4">
-            <Summarizer />
+            <Suspense fallback={<FeatureLoadingFallback />}>
+              <Summarizer />
+            </Suspense>
           </TabsContent>
         </Tabs>
 
