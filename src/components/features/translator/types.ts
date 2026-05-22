@@ -1,22 +1,17 @@
-export interface TranslatorAvailability {
-  available: string;
-}
+export type Availability =
+  | "unavailable"
+  | "downloadable"
+  | "downloading"
+  | "available";
 
-export interface TranslatorOptions {
-  sourceLanguage: string;
-  targetLanguage: string;
-  monitor?: (monitor: TranslatorMonitor) => void;
-}
-
-export interface TranslatorAvailabilityOptions {
-  sourceLanguage: string;
-  targetLanguage: string;
-}
-
-export interface TranslatorMonitor {
+export interface CreateMonitor {
   addEventListener(
     type: "downloadprogress",
-    listener: (event: DownloadProgressEvent) => void
+    listener: (event: DownloadProgressEvent) => void,
+  ): void;
+  removeEventListener(
+    type: "downloadprogress",
+    listener: (event: DownloadProgressEvent) => void,
   ): void;
 }
 
@@ -25,32 +20,60 @@ export interface DownloadProgressEvent extends Event {
   total: number;
 }
 
+export interface TranslatorOptions {
+  sourceLanguage: string;
+  targetLanguage: string;
+  monitor?: (monitor: CreateMonitor) => void;
+  signal?: AbortSignal;
+}
+
+export interface TranslatorAvailabilityOptions {
+  sourceLanguage: string;
+  targetLanguage: string;
+}
+
 export interface Translator {
-  translate(text: string): Promise<string>;
-  translateStreaming(text: string): ReadableStream<string>;
+  translate(text: string, options?: { signal?: AbortSignal }): Promise<string>;
+  translateStreaming(
+    text: string,
+    options?: { signal?: AbortSignal },
+  ): ReadableStream<string>;
   destroy(): void;
   sourceLanguage: string;
   targetLanguage: string;
 }
 
+export interface LanguageDetectorResult {
+  detectedLanguage: string;
+  confidence: number;
+}
+
+export interface LanguageDetectorCreateOptions {
+  monitor?: (monitor: CreateMonitor) => void;
+  signal?: AbortSignal;
+  expectedInputLanguages?: string[];
+}
+
 export interface LanguageDetector {
   detect(
-    text: string
-  ): Promise<Array<{ language: string; confidence: number }>>;
+    text: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<LanguageDetectorResult[]>;
   ready: Promise<void>;
+  destroy(): void;
 }
 
 declare global {
   interface Window {
     Translator?: {
       availability(
-        options: TranslatorAvailabilityOptions
-      ): Promise<TranslatorAvailability>;
+        options: TranslatorAvailabilityOptions,
+      ): Promise<Availability>;
       create(options: TranslatorOptions): Promise<Translator>;
     };
     LanguageDetector?: {
-      availability(): Promise<TranslatorAvailability>;
-      create(): Promise<LanguageDetector>;
+      availability(): Promise<Availability>;
+      create(options?: LanguageDetectorCreateOptions): Promise<LanguageDetector>;
     };
   }
 }

@@ -7,59 +7,56 @@ import {
 } from "./translatorState";
 import { normalizeToPrimaryTag, resolveLanguageName } from "../constants";
 import type {
-  Translator,
+  CreateMonitor,
+  DownloadProgressEvent,
   LanguageDetector,
-  TranslatorOptions,
+  Translator,
 } from "../types";
 import { toast } from "sonner";
-
-// Symbol for cleanup function on translator instance
-const cleanupSymbol = Symbol("translatorProgressCleanup");
 
 type UseTranslatorResult = {
   state: UIState;
   dispatch: React.Dispatch<UIAction>;
   translateText: () => Promise<void>;
-  handleDetectLanguage: (text: string) => Promise<{ lang: string; conf: number } | null>;
+  handleDetectLanguage: (
+    text: string,
+  ) => Promise<{ lang: string; conf: number } | null>;
   copyToClipboard: (text: string) => void;
   hasTranslator: boolean;
   hasLanguageDetector: boolean;
 };
 
+const hasTranslatorAPI = typeof self !== "undefined" && "Translator" in self;
+const hasLanguageDetectorAPI =
+  typeof self !== "undefined" && "LanguageDetector" in self;
+
 export function useTranslator(): UseTranslatorResult {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Feature presence checks
-  const hasTranslator = "Translator" in self;
-  const hasLanguageDetector = "LanguageDetector" in self;
-
-  // Ref to hold the current translator instance
-  const translatorRef = useRef<
-    (Translator & { [cleanupSymbol]?: () => void }) | null
-  >(null);
-
-  // Ref to hold the language detector instance
+  const translatorRef = useRef<Translator | null>(null);
   const detectorRef = useRef<LanguageDetector | null>(null);
+  const lifecycleAbortRef = useRef<AbortController | null>(null);
+  const createAbortRef = useRef<AbortController | null>(null);
+  const operationAbortRef = useRef<AbortController | null>(null);
 
-  // Initialize detector if present
+  // Lifecycle: initialize detector, destroy everything on unmount.
   useEffect(() => {
-    const abortController = new AbortController();
-    const { signal } = abortController;
+    const lifecycleAbort = new AbortController();
+    lifecycleAbortRef.current = lifecycleAbort;
+    const { signal } = lifecycleAbort;
+
     const init = async () => {
-      if (!hasLanguageDetector || signal.aborted) return;
+      if (!hasLanguageDetectorAPI) return;
       try {
-        const detector = await window.LanguageDetector!.create();
+        const availability = await window.LanguageDetector!.availability();
+        if (signal.aborted || availability === "unavailable") return;
+        const detector = await window.LanguageDetector!.create({ signal });
         if (signal.aborted) {
-          // Best-effort cleanup if API provides destroy
-          try {
-            (detector as unknown as { destroy?: () => void }).destroy?.();
-          } catch {
-            // ignore
-          }
+          detector.destroy?.();
           return;
         }
         detectorRef.current = detector;
-        await detectorRef.current.ready;
+        await detector.ready;
       } catch (error) {
         if (!signal.aborted) {
           console.error("Failed to create language detector:", error);
@@ -68,76 +65,83 @@ export function useTranslator(): UseTranslatorResult {
     };
     init();
 
-    // Cleanup: ensure any active translator is destroyed when the component unmounts
     return () => {
-      abortController.abort();
-      if (translatorRef.current) {
-        translatorRef.current[cleanupSymbol]?.();
-        try {
-          translatorRef.current.destroy();
-        } catch {
-          // ignore destroy errors during unmount
-        }
+      lifecycleAbort.abort();
+      createAbortRef.current?.abort();
+      operationAbortRef.current?.abort();
+      detectorRef.current?.destroy?.();
+      detectorRef.current = null;
+      try {
+        translatorRef.current?.destroy();
+      } catch {
+        // ignore destroy errors during unmount
       }
+      translatorRef.current = null;
     };
-  }, [hasLanguageDetector]);
+  }, []);
 
-  // Create translator instance with download progress monitoring
-  const createTranslator = useCallback(async () => {
-    if (!window.Translator) return null;
-    let cleanup = () => {};
-    let downloadCompleted = false;
-    try {
-      dispatch({ type: "setIsDownloading", payload: true });
-      dispatch({ type: "setDownloadProgress", payload: 0 });
+  const createTranslator = useCallback(
+    async (signal: AbortSignal): Promise<Translator | null> => {
+      if (!window.Translator) return null;
+      let downloadCompleted = false;
 
-      const translator = await window.Translator.create({
-        sourceLanguage: state.sourceLanguage,
-        targetLanguage: state.targetLanguage,
-        monitor(monitor: EventTarget) {
-          const onProgress = (event: Event) => {
-            const dp = event as unknown as { loaded: number; total: number };
-            const progress = dp.total > 0 ? (dp.loaded / dp.total) * 100 : 100;
-            dispatch({ type: "setDownloadProgress", payload: progress });
-            if (progress >= 100 && !downloadCompleted) {
-              downloadCompleted = true;
-              dispatch({ type: "setIsDownloading", payload: false });
-              toast.success("Language pack ready!", {
-                description: `${state.sourceLanguage} → ${state.targetLanguage} translation model downloaded successfully.`,
-              });
-            }
-          };
-          monitor.addEventListener(
-            "downloadprogress",
-            onProgress as EventListener,
-          );
-          cleanup = () =>
-            monitor.removeEventListener(
+      try {
+        const availability = await window.Translator.availability({
+          sourceLanguage: state.sourceLanguage,
+          targetLanguage: state.targetLanguage,
+        });
+
+        if (availability === "unavailable") {
+          toast.error("Language pair not supported", {
+            description: `Translation from ${state.sourceLanguage} to ${state.targetLanguage} is not available on this device.`,
+          });
+          return null;
+        }
+
+        if (availability !== "available") {
+          dispatch({ type: "setIsDownloading", payload: true });
+          dispatch({ type: "setDownloadProgress", payload: 0 });
+        }
+
+        const translator = await window.Translator.create({
+          sourceLanguage: state.sourceLanguage,
+          targetLanguage: state.targetLanguage,
+          signal,
+          monitor(monitor: CreateMonitor) {
+            monitor.addEventListener(
               "downloadprogress",
-              onProgress as EventListener,
+              (event: DownloadProgressEvent) => {
+                const progress =
+                  event.total > 0 ? (event.loaded / event.total) * 100 : 100;
+                dispatch({ type: "setDownloadProgress", payload: progress });
+                if (progress >= 100 && !downloadCompleted) {
+                  downloadCompleted = true;
+                  dispatch({ type: "setIsDownloading", payload: false });
+                  toast.success("Language pack ready!", {
+                    description: `${state.sourceLanguage} → ${state.targetLanguage} translation model downloaded successfully.`,
+                  });
+                }
+              },
             );
-        },
-      } as TranslatorOptions);
+          },
+        });
 
-      (translator as Translator & { [cleanupSymbol]?: () => void })[
-        cleanupSymbol
-      ] = cleanup;
-      if (!downloadCompleted) {
         dispatch({ type: "setIsDownloading", payload: false });
+        return translator;
+      } catch (error) {
+        dispatch({ type: "setIsDownloading", payload: false });
+        if (signal.aborted) return null;
+        console.error("Failed to create translator:", error);
+        toast.error("Error creating translator", {
+          description:
+            error instanceof Error ? error.message : "Unknown error occurred",
+        });
+        return null;
       }
-      return translator as Translator & { [cleanupSymbol]?: () => void };
-    } catch (error) {
-      dispatch({ type: "setIsDownloading", payload: false });
-      console.error("Failed to create translator:", error);
-      toast.error("Error creating translator", {
-        description:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      });
-      return null;
-    }
-  }, [state.sourceLanguage, state.targetLanguage]);
+    },
+    [state.sourceLanguage, state.targetLanguage],
+  );
 
-  // Translate text (handles both streaming and non-streaming modes)
   const translateText = useCallback(async () => {
     if (!state.inputText.trim()) {
       toast.error("No text to translate", {
@@ -146,47 +150,67 @@ export function useTranslator(): UseTranslatorResult {
       return;
     }
 
+    operationAbortRef.current?.abort();
+    const operationAbort = new AbortController();
+    operationAbortRef.current = operationAbort;
+    const { signal } = operationAbort;
+
     dispatch({ type: "setIsTranslating", payload: true });
     dispatch({ type: "setTranslatedText", payload: "" });
     dispatch({ type: "setStreamedText", payload: "" });
+
     try {
-      // Recreate translator if language pair changed
-      if (
+      const needsNewTranslator =
         !translatorRef.current ||
         translatorRef.current.sourceLanguage !== state.sourceLanguage ||
-        translatorRef.current.targetLanguage !== state.targetLanguage
-      ) {
-        if (translatorRef.current) {
-          translatorRef.current[cleanupSymbol]?.();
-          translatorRef.current.destroy();
+        translatorRef.current.targetLanguage !== state.targetLanguage;
+
+      if (needsNewTranslator) {
+        try {
+          translatorRef.current?.destroy();
+        } catch {
+          // ignore
         }
-        translatorRef.current = await createTranslator();
+        translatorRef.current = null;
+
+        createAbortRef.current?.abort();
+        const createAbort = new AbortController();
+        createAbortRef.current = createAbort;
+        translatorRef.current = await createTranslator(createAbort.signal);
       }
 
-      if (!translatorRef.current) {
-        throw new Error("Failed to create translator");
-      }
+      if (!translatorRef.current) return;
+      if (signal.aborted) return;
 
       let finalText = "";
       if (state.streamingMode) {
         const stream = translatorRef.current.translateStreaming(
           state.inputText,
+          { signal },
         );
         const reader = stream.getReader();
-        let fullText = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          fullText += value;
-          dispatch({ type: "setStreamedText", payload: fullText });
+        try {
+          let fullText = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullText += value;
+            dispatch({ type: "setStreamedText", payload: fullText });
+          }
+          dispatch({ type: "setTranslatedText", payload: fullText });
+          finalText = fullText;
+        } finally {
+          reader.releaseLock();
         }
-        dispatch({ type: "setTranslatedText", payload: fullText });
-        finalText = fullText;
       } else {
-        const result = await translatorRef.current.translate(state.inputText);
+        const result = await translatorRef.current.translate(state.inputText, {
+          signal,
+        });
         dispatch({ type: "setTranslatedText", payload: result });
         finalText = result;
       }
+
+      if (signal.aborted) return;
 
       dispatch({
         type: "addTranslationHistory",
@@ -202,13 +226,18 @@ export function useTranslator(): UseTranslatorResult {
         description: `Translated from ${state.sourceLanguage} to ${state.targetLanguage}`,
       });
     } catch (error) {
+      if (signal.aborted || (error instanceof Error && error.name === "AbortError")) {
+        return;
+      }
       console.error("Translation failed:", error);
       toast.error("Translation failed", {
         description:
           error instanceof Error ? error.message : "Unknown error occurred",
       });
     } finally {
-      dispatch({ type: "setIsTranslating", payload: false });
+      if (!signal.aborted) {
+        dispatch({ type: "setIsTranslating", payload: false });
+      }
     }
   }, [
     state.inputText,
@@ -218,30 +247,22 @@ export function useTranslator(): UseTranslatorResult {
     createTranslator,
   ]);
 
-  // Language detection handler
   const handleDetectLanguage = useCallback(async (text: string) => {
     if (!detectorRef.current || !text) return null;
     try {
       const results = await detectorRef.current.detect(text);
       if (results && results.length > 0) {
-        const topResult = results[0] as {
-          language?: string;
-          detectedLanguage?: string;
-          lang?: string;
-          confidence: number;
-        };
-        const detectedCodeRaw: string | undefined =
-          topResult.language || topResult.detectedLanguage || topResult.lang;
-        const detectedCode = normalizeToPrimaryTag(detectedCodeRaw);
+        const top = results[0];
+        const detectedCode = normalizeToPrimaryTag(top.detectedLanguage);
         if (detectedCode) {
           dispatch({ type: "setSourceLanguage", payload: detectedCode });
         }
         toast.success("Language detected!", {
           description: `Detected ${resolveLanguageName(
-            detectedCodeRaw,
-          )} with ${(topResult.confidence * 100).toFixed(1)}% confidence`,
+            top.detectedLanguage,
+          )} with ${(top.confidence * 100).toFixed(1)}% confidence`,
         });
-        return { lang: detectedCode, conf: topResult.confidence };
+        return { lang: detectedCode, conf: top.confidence };
       }
       toast.error("Detection failed", {
         description: "Could not detect language",
@@ -256,7 +277,6 @@ export function useTranslator(): UseTranslatorResult {
     }
   }, []);
 
-  // Memoized clipboard copy
   const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied!", { description: "Text copied to clipboard" });
@@ -268,7 +288,7 @@ export function useTranslator(): UseTranslatorResult {
     translateText,
     handleDetectLanguage,
     copyToClipboard,
-    hasTranslator,
-    hasLanguageDetector,
+    hasTranslator: hasTranslatorAPI,
+    hasLanguageDetector: hasLanguageDetectorAPI,
   };
 }
