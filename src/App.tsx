@@ -9,6 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Languages, Brain, Sparkles, Loader2 } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Lazy load feature components
 const Translator = lazy(() =>
@@ -43,17 +45,20 @@ function App() {
         {/* Header */}
         <Card className="mb-8">
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-10 w-10 text-foreground" />
-              <div>
-                <CardTitle className="text-3xl">
-                  Chrome Built-in AI APIs Demo
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Explore on-device AI capabilities with Chrome's experimental
-                  APIs
-                </CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-10 w-10 text-foreground" />
+                <div>
+                  <CardTitle className="text-3xl">
+                    Chrome Built-in AI APIs Demo
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Explore on-device AI capabilities with Chrome's experimental
+                    APIs
+                  </CardDescription>
+                </div>
               </div>
+              <ThemeToggle />
             </div>
           </CardHeader>
         </Card>
@@ -110,6 +115,7 @@ function App() {
           </CardContent>
         </Card>
       </div>
+      <Toaster />
     </div>
   );
 }
