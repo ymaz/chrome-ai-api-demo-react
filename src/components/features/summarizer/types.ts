@@ -22,8 +22,9 @@ export interface CreateMonitor {
 }
 
 export interface DownloadProgressEvent extends Event {
+  // `loaded` is a normalized 0..1 download fraction.
   loaded: number;
-  total: number;
+  total?: number;
 }
 
 export interface SummarizerOptions {

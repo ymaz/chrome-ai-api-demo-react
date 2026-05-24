@@ -34,15 +34,12 @@ export function useSummarizer(): UseSummarizerResult {
 
   const summarizerRef = useRef<Summarizer | null>(null);
   const activeSettingsRef = useRef<ActiveSettings | null>(null);
-  const lifecycleAbortRef = useRef<AbortController | null>(null);
-  const createAbortRef = useRef<AbortController | null>(null);
   const operationAbortRef = useRef<AbortController | null>(null);
   const modelDownloadedRef = useRef(false);
 
   // Lifecycle: check availability once, destroy on unmount.
   useEffect(() => {
     const lifecycleAbort = new AbortController();
-    lifecycleAbortRef.current = lifecycleAbort;
 
     const fetchAvailability = async () => {
       if (typeof self === "undefined" || !("Summarizer" in self)) return;
@@ -62,7 +59,6 @@ export function useSummarizer(): UseSummarizerResult {
 
     return () => {
       lifecycleAbort.abort();
-      createAbortRef.current?.abort();
       operationAbortRef.current?.abort();
       try {
         summarizerRef.current?.destroy();
@@ -89,8 +85,8 @@ export function useSummarizer(): UseSummarizerResult {
           monitor.addEventListener(
             "downloadprogress",
             (event: DownloadProgressEvent) => {
-              const progress =
-                event.total > 0 ? (event.loaded / event.total) * 100 : 100;
+              // The downloadprogress event reports `loaded` as a 0..1 fraction.
+              const progress = event.loaded * 100;
               dispatch({ type: "setDownloadProgress", payload: progress });
               if (progress >= 100 && !downloadCompleted) {
                 downloadCompleted = true;
@@ -182,12 +178,17 @@ export function useSummarizer(): UseSummarizerResult {
           // ignore
         }
         summarizerRef.current = null;
+        activeSettingsRef.current = null;
 
-        createAbortRef.current?.abort();
-        const createAbort = new AbortController();
-        createAbortRef.current = createAbort;
-        summarizerRef.current = await createSummarizer(createAbort.signal);
-        if (summarizerRef.current) {
+        const created = await createSummarizer(signal);
+        // A newer operation (or unmount) may have superseded this one while we
+        // awaited create. Don't clobber its instance; discard ours instead.
+        if (signal.aborted) {
+          created?.destroy();
+          return;
+        }
+        summarizerRef.current = created;
+        if (created) {
           activeSettingsRef.current = currentSettings;
         }
       }
@@ -218,7 +219,11 @@ export function useSummarizer(): UseSummarizerResult {
           finalSummary = full;
           dispatch({ type: "setSummary", payload: full });
         } finally {
-          reader.releaseLock();
+          if (signal.aborted) {
+            reader.cancel().catch(() => {});
+          } else {
+            reader.releaseLock();
+          }
         }
       } else {
         const result = await summarizerRef.current.summarize(

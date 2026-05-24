@@ -35,14 +35,11 @@ export function useTranslator(): UseTranslatorResult {
 
   const translatorRef = useRef<Translator | null>(null);
   const detectorRef = useRef<LanguageDetector | null>(null);
-  const lifecycleAbortRef = useRef<AbortController | null>(null);
-  const createAbortRef = useRef<AbortController | null>(null);
   const operationAbortRef = useRef<AbortController | null>(null);
 
   // Lifecycle: initialize detector, destroy everything on unmount.
   useEffect(() => {
     const lifecycleAbort = new AbortController();
-    lifecycleAbortRef.current = lifecycleAbort;
     const { signal } = lifecycleAbort;
 
     const init = async () => {
@@ -67,7 +64,6 @@ export function useTranslator(): UseTranslatorResult {
 
     return () => {
       lifecycleAbort.abort();
-      createAbortRef.current?.abort();
       operationAbortRef.current?.abort();
       detectorRef.current?.destroy?.();
       detectorRef.current = null;
@@ -111,8 +107,8 @@ export function useTranslator(): UseTranslatorResult {
             monitor.addEventListener(
               "downloadprogress",
               (event: DownloadProgressEvent) => {
-                const progress =
-                  event.total > 0 ? (event.loaded / event.total) * 100 : 100;
+                // The downloadprogress event reports `loaded` as a 0..1 fraction.
+                const progress = event.loaded * 100;
                 dispatch({ type: "setDownloadProgress", payload: progress });
                 if (progress >= 100 && !downloadCompleted) {
                   downloadCompleted = true;
@@ -173,10 +169,14 @@ export function useTranslator(): UseTranslatorResult {
         }
         translatorRef.current = null;
 
-        createAbortRef.current?.abort();
-        const createAbort = new AbortController();
-        createAbortRef.current = createAbort;
-        translatorRef.current = await createTranslator(createAbort.signal);
+        const created = await createTranslator(signal);
+        // A newer operation (or unmount) may have superseded this one while we
+        // awaited create. Don't clobber its instance; discard ours instead.
+        if (signal.aborted) {
+          created?.destroy();
+          return;
+        }
+        translatorRef.current = created;
       }
 
       if (!translatorRef.current) return;
@@ -200,7 +200,11 @@ export function useTranslator(): UseTranslatorResult {
           dispatch({ type: "setTranslatedText", payload: fullText });
           finalText = fullText;
         } finally {
-          reader.releaseLock();
+          if (signal.aborted) {
+            reader.cancel().catch(() => {});
+          } else {
+            reader.releaseLock();
+          }
         }
       } else {
         const result = await translatorRef.current.translate(state.inputText, {
