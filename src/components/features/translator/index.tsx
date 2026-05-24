@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import {
   Card,
@@ -25,9 +25,10 @@ import SampleTexts from "./parts/SampleTexts";
 import DetectionPanel from "./parts/DetectionPanel";
 import HistoryPanel from "./parts/HistoryPanel";
 import { useTranslator } from "./hooks/useTranslator";
+import { saveHistory } from "./hooks/translatorState";
 import { SAMPLE_TEXTS } from "./constants";
 
-export const TranslatorFeatureComponent: React.FC = () => {
+export const TranslatorFeatureComponent = () => {
   const {
     state,
     dispatch,
@@ -37,6 +38,10 @@ export const TranslatorFeatureComponent: React.FC = () => {
     hasTranslator,
     hasLanguageDetector,
   } = useTranslator();
+
+  useEffect(() => {
+    saveHistory(state.translationHistory);
+  }, [state.translationHistory]);
 
   const isSupported = hasTranslator;
 

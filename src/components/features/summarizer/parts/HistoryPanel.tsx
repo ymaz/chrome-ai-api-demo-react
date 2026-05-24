@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   CardContent,
@@ -21,7 +20,7 @@ type Props = {
   summaryHistory: HistoryItem[];
 };
 
-const HistoryPanel: React.FC<Props> = ({ summaryHistory }) => {
+const HistoryPanel = ({ summaryHistory }: Props) => {
   return (
     <Card>
       <CardHeader>

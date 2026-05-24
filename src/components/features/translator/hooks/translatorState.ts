@@ -17,6 +17,30 @@ export type UIState = {
   }>;
 };
 
+const HISTORY_KEY = "translator.history";
+const MAX_HISTORY = 10;
+
+type TranslationHistory = UIState["translationHistory"];
+
+function loadHistory(): TranslationHistory {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveHistory(history: TranslationHistory): void {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    // ignore storage errors (private mode, quota, etc.)
+  }
+}
+
 export type UIAction =
   | { type: "setSourceLanguage"; payload: string }
   | { type: "setTargetLanguage"; payload: string }
@@ -44,7 +68,7 @@ export const initialState: UIState = {
   isTranslating: false,
   isDownloading: false,
   downloadProgress: 0,
-  translationHistory: [],
+  translationHistory: loadHistory(),
 };
 
 export function reducer(state: UIState, action: UIAction): UIState {
@@ -72,7 +96,7 @@ export function reducer(state: UIState, action: UIAction): UIState {
         ...state,
         translationHistory: [
           action.payload,
-          ...state.translationHistory.slice(0, 9),
+          ...state.translationHistory.slice(0, MAX_HISTORY - 1),
         ],
       };
     case "clearTexts":

@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,7 @@ type Props = {
   swapLanguages: () => void;
 };
 
-const TranslationSettings: React.FC<Props> = ({
+const TranslationSettings = ({
   sourceLanguage,
   targetLanguage,
   setSourceLanguage,
@@ -37,7 +36,7 @@ const TranslationSettings: React.FC<Props> = ({
   isDownloading,
   downloadProgress,
   swapLanguages,
-}) => {
+}: Props) => {
   return (
     <Card>
       <CardHeader>

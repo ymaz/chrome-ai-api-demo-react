@@ -22,6 +22,30 @@ export type UIState = {
   }>;
 };
 
+const HISTORY_KEY = "summarizer.history";
+const MAX_HISTORY = 10;
+
+type SummaryHistory = UIState["summaryHistory"];
+
+function loadHistory(): SummaryHistory {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveHistory(history: SummaryHistory): void {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    // ignore storage errors (private mode, quota, etc.)
+  }
+}
+
 export type UIAction =
   | { type: "setSupported"; payload: boolean }
   | { type: "setAvailability"; payload: string }
@@ -56,7 +80,7 @@ export const initialState: UIState = {
   summaryFormat: "plain-text",
   summaryLength: "medium",
   sharedContext: "",
-  summaryHistory: [],
+  summaryHistory: loadHistory(),
 };
 
 export function reducer(state: UIState, action: UIAction): UIState {
@@ -90,7 +114,10 @@ export function reducer(state: UIState, action: UIAction): UIState {
     case "addHistory":
       return {
         ...state,
-        summaryHistory: [action.payload, ...state.summaryHistory.slice(0, 9)],
+        summaryHistory: [
+          action.payload,
+          ...state.summaryHistory.slice(0, MAX_HISTORY - 1),
+        ],
       };
     case "clearAll":
       return {

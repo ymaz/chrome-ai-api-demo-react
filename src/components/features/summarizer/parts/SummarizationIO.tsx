@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +18,7 @@ type Props = {
   modelDownloaded: boolean;
 };
 
-const SummarizationIO: React.FC<Props> = ({
+const SummarizationIO = ({
   inputText,
   setInputText,
   isSummarizing,
@@ -32,7 +31,7 @@ const SummarizationIO: React.FC<Props> = ({
   isDownloading,
   downloadProgress,
   modelDownloaded,
-}) => {
+}: Props) => {
   const outputValue =
     streamingMode && isSummarizing ? streamedSummary : summary;
   return (
@@ -45,10 +44,19 @@ const SummarizationIO: React.FC<Props> = ({
           <CardContent className="space-y-4">
             <Textarea
               value={inputText}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setInputText(e.target.value)
-              }
-              placeholder="Enter text to summarize..."
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  (e.metaKey || e.ctrlKey) &&
+                  e.key === "Enter" &&
+                  !isSummarizing &&
+                  inputText.trim()
+                ) {
+                  e.preventDefault();
+                  summarizeText();
+                }
+              }}
+              placeholder="Enter text to summarize... (Ctrl/⌘+Enter)"
               className="min-h-[300px] font-mono text-sm"
             />
             <div className="flex items-center justify-between">

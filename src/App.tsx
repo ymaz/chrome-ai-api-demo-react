@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Languages, Brain, Sparkles, Loader2 } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Lazy load feature components
 const Translator = lazy(() =>
@@ -88,15 +89,19 @@ function App() {
           </TabsList>
 
           <TabsContent value="translator" className="space-y-4">
-            <Suspense fallback={<FeatureLoadingFallback />}>
-              <Translator />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<FeatureLoadingFallback />}>
+                <Translator />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="summarizer" className="space-y-4">
-            <Suspense fallback={<FeatureLoadingFallback />}>
-              <Summarizer />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<FeatureLoadingFallback />}>
+                <Summarizer />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
 
