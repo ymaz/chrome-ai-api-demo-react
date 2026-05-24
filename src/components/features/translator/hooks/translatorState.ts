@@ -22,12 +22,25 @@ const MAX_HISTORY = 10;
 
 type TranslationHistory = UIState["translationHistory"];
 
+function isValidEntry(h: unknown): h is TranslationHistory[number] {
+  return (
+    !!h &&
+    typeof h === "object" &&
+    typeof (h as Record<string, unknown>).source === "string" &&
+    typeof (h as Record<string, unknown>).target === "string" &&
+    typeof (h as Record<string, unknown>).original === "string" &&
+    typeof (h as Record<string, unknown>).translated === "string" &&
+    typeof (h as Record<string, unknown>).timestamp === "string"
+  );
+}
+
 function loadHistory(): TranslationHistory {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidEntry).slice(0, MAX_HISTORY);
   } catch {
     return [];
   }

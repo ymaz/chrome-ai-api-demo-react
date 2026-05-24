@@ -27,12 +27,24 @@ const MAX_HISTORY = 10;
 
 type SummaryHistory = UIState["summaryHistory"];
 
+function isValidEntry(h: unknown): h is SummaryHistory[number] {
+  return (
+    !!h &&
+    typeof h === "object" &&
+    typeof (h as Record<string, unknown>).type === "string" &&
+    typeof (h as Record<string, unknown>).original === "string" &&
+    typeof (h as Record<string, unknown>).summary === "string" &&
+    typeof (h as Record<string, unknown>).timestamp === "string"
+  );
+}
+
 function loadHistory(): SummaryHistory {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidEntry).slice(0, MAX_HISTORY);
   } catch {
     return [];
   }
