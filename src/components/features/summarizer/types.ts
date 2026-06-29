@@ -1,60 +1,65 @@
 export type SummaryType = "tl;dr" | "key-points" | "teaser" | "headline";
 
-export interface SummarizerOptions {
-  type?: SummaryType | "tldr";
-  format?: "plain-text" | "markdown";
-  length?: "short" | "medium" | "long";
-  sharedContext?: string;
-  monitor?: (monitor: SummarizerMonitor) => void;
-}
+export type SummaryFormat = "plain-text" | "markdown";
 
-export interface SummarizerMonitor {
+export type SummaryLength = "short" | "medium" | "long";
+
+export type Availability =
+  | "unavailable"
+  | "downloadable"
+  | "downloading"
+  | "available";
+
+export interface CreateMonitor {
   addEventListener(
     type: "downloadprogress",
-    listener: (event: DownloadProgressEvent) => void
+    listener: (event: DownloadProgressEvent) => void,
+  ): void;
+  removeEventListener(
+    type: "downloadprogress",
+    listener: (event: DownloadProgressEvent) => void,
   ): void;
 }
 
 export interface DownloadProgressEvent extends Event {
+  // `loaded` is a normalized 0..1 download fraction.
   loaded: number;
-  total: number;
+  total?: number;
+}
+
+export interface SummarizerOptions {
+  type?: SummaryType | "tldr";
+  format?: SummaryFormat;
+  length?: SummaryLength;
+  sharedContext?: string;
+  expectedInputLanguages?: string[];
+  expectedContextLanguages?: string[];
+  outputLanguage?: string;
+  monitor?: (monitor: CreateMonitor) => void;
+  signal?: AbortSignal;
+}
+
+export interface SummarizeCallOptions {
+  context?: string;
+  signal?: AbortSignal;
 }
 
 export interface Summarizer {
-  summarize(text: string, options?: { context?: string }): Promise<string>;
+  summarize(text: string, options?: SummarizeCallOptions): Promise<string>;
   summarizeStreaming(
     text: string,
-    options?: { context?: string }
+    options?: SummarizeCallOptions,
   ): ReadableStream<string>;
+  measureInputUsage?(text: string): Promise<number>;
+  inputQuota?: number;
   destroy(): void;
 }
 
-export interface SummarizerAvailabilityLegacy {
-  available: "readily" | "after-download" | "no";
+export interface SummarizerGlobal {
+  availability: (options?: SummarizerOptions) => Promise<Availability>;
+  create: (options?: SummarizerOptions) => Promise<Summarizer>;
 }
-
-export type SummarizerAvailabilityNew =
-  | "readily"
-  | "after-download"
-  | "downloadable"
-  | "unavailable"
-  | "no";
 
 declare global {
-  interface Window {
-    ai?: {
-      summarizer?: {
-        capabilities(): Promise<SummarizerAvailabilityLegacy>;
-        create(options?: SummarizerOptions): Promise<Summarizer>;
-      };
-    };
-  }
-  interface SummarizerGlobal {
-    availability: () => Promise<SummarizerAvailabilityNew>;
-    create: (options?: SummarizerOptions) => Promise<Summarizer>;
-  }
-  // Ambient global on self
   var Summarizer: SummarizerGlobal | undefined;
 }
-
-
