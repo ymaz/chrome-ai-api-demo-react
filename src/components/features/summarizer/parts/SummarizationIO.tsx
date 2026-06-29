@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { Brain, Copy, Loader2 } from "lucide-react";
 
 type Props = {
@@ -140,12 +141,7 @@ const SummarizationIO = ({
                   Downloading summarization model...
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div
-                  className="bg-blue-600 h-2.5 rounded-full transition-all"
-                  style={{ width: `${downloadProgress}%` }}
-                ></div>
-              </div>
+              <Progress value={downloadProgress} />
               <div className="text-sm text-muted-foreground mt-1">
                 {downloadProgress.toFixed(0)}% complete
               </div>

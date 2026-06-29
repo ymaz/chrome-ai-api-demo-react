@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Toaster } from "@/components/ui/sonner";
 import {
   Card,
   CardContent,
@@ -74,7 +73,7 @@ export const TranslatorFeatureComponent = () => {
               <li>Open Chrome Dev or Chrome Canary (version 138+)</li>
               <li>
                 Navigate to{" "}
-                <code className="bg-gray-100 px-1 py-0.5 rounded">
+                <code className="bg-muted px-1 py-0.5 rounded">
                   chrome://flags
                 </code>
               </li>
@@ -82,7 +81,7 @@ export const TranslatorFeatureComponent = () => {
               <li>Enable the flag and restart Chrome</li>
               <li>
                 Visit{" "}
-                <code className="bg-gray-100 px-1 py-0.5 rounded">
+                <code className="bg-muted px-1 py-0.5 rounded">
                   chrome://on-device-translation-internals/
                 </code>
               </li>
@@ -96,7 +95,6 @@ export const TranslatorFeatureComponent = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
-      <Toaster />
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center justify-between">

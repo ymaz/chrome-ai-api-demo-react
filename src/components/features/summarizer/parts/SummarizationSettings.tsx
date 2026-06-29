@@ -108,7 +108,7 @@ const SummarizationSettings = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
           <div className="space-y-0.5">
             <Label htmlFor="streaming-mode">Streaming Mode</Label>
             <p className="text-sm text-muted-foreground">

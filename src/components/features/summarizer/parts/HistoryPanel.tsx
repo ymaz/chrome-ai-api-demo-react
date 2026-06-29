@@ -44,11 +44,11 @@ const HistoryPanel = ({ summaryHistory }: Props) => {
                     </span>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
-                    <div className="p-3 bg-gray-50 rounded">
+                    <div className="p-3 bg-muted rounded">
                       <p className="text-xs font-semibold mb-1">Original:</p>
                       <p className="text-sm line-clamp-3">{item.original}</p>
                     </div>
-                    <div className="p-3 bg-purple-50 rounded">
+                    <div className="p-3 bg-muted rounded border-l-2 border-primary">
                       <p className="text-xs font-semibold mb-1">Summary:</p>
                       <p className="text-sm">{item.summary}</p>
                     </div>
