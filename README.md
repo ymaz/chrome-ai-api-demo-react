@@ -2,7 +2,7 @@
 
 A comprehensive demonstration of Chrome's experimental Built-in AI APIs, showcasing on-device AI capabilities including translation and text summarization.
 
-![Chrome AI Demo](https://img.shields.io/badge/Chrome-127%2B-4285F4?logo=googlechrome&logoColor=white)
+![Chrome AI Demo](https://img.shields.io/badge/Chrome-138%2B-4285F4?logo=googlechrome&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
@@ -27,7 +27,7 @@ A comprehensive demonstration of Chrome's experimental Built-in AI APIs, showcas
 ## Quick Start
 
 ### Prerequisites
-- Chrome Dev or Chrome Canary (version 127+)
+- Chrome 138+ (stable) for the Translator, Language Detector, and Summarizer APIs
 - Node.js 18+
 - npm or yarn
 
@@ -186,9 +186,9 @@ See [SUMMARIZER_README.md](./SUMMARIZER_README.md) for comprehensive documentati
 
 | Feature | Chrome Version | Status |
 |---------|---------------|--------|
-| Translator API | 138+ | Experimental |
-| Summarizer API | 127+ | Experimental |
-| Language Detector | 138+ | Experimental |
+| Translator API | 138+ | Stable |
+| Summarizer API | 138+ | Stable |
+| Language Detector | 138+ | Stable |
 
 ## Known Limitations
 

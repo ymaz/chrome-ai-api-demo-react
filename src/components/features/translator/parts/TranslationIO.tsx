@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +15,7 @@ type Props = {
   clearAll: () => void;
 };
 
-const TranslationIO: React.FC<Props> = ({
+const TranslationIO = ({
   inputText,
   setInputText,
   isTranslating,
@@ -26,7 +25,7 @@ const TranslationIO: React.FC<Props> = ({
   copyToClipboard,
   translateText,
   clearAll,
-}) => {
+}: Props) => {
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -37,10 +36,19 @@ const TranslationIO: React.FC<Props> = ({
           <CardContent className="space-y-4">
             <Textarea
               value={inputText}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setInputText(e.target.value)
-              }
-              placeholder="Enter text to translate..."
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  (e.metaKey || e.ctrlKey) &&
+                  e.key === "Enter" &&
+                  !isTranslating &&
+                  inputText.trim()
+                ) {
+                  e.preventDefault();
+                  translateText();
+                }
+              }}
+              placeholder="Enter text to translate... (Ctrl/⌘+Enter)"
               className="min-h-[200px]"
             />
             <div className="flex items-center justify-between">

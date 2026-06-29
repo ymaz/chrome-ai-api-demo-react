@@ -14,7 +14,7 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
-  base: '/chrome-ai-api-demo-react/',
+  base: process.env.VITE_BASE ?? '/chrome-ai-api-demo-react/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -35,7 +35,6 @@ export default defineConfig({
             '@radix-ui/react-scroll-area',
             '@radix-ui/react-select',
             '@radix-ui/react-separator',
-            '@radix-ui/react-slider',
             '@radix-ui/react-slot',
             '@radix-ui/react-switch',
             '@radix-ui/react-tabs',

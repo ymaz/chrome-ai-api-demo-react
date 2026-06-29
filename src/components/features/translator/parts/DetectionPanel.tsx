@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -20,15 +20,14 @@ type Props = {
   onDetect: (text: string) => Promise<{ lang: string; conf: number } | null>;
 };
 
-const DetectionPanel: React.FC<Props> = ({
+const DetectionPanel = ({
   inputText,
   setInputText,
   onDetect,
-}) => {
-  const [isDetecting, setIsDetecting] = React.useState(false);
-  const [detectedLanguage, setDetectedLanguage] = React.useState<string>("");
-  const [detectionConfidence, setDetectionConfidence] =
-    React.useState<number>(0);
+}: Props) => {
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [detectedLanguage, setDetectedLanguage] = useState<string>("");
+  const [detectionConfidence, setDetectionConfidence] = useState<number>(0);
 
   const handleDetect = async () => {
     if (!inputText) return;

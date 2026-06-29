@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   CardContent,
@@ -14,7 +13,7 @@ type Props = {
   onLoadSample: (sample: (typeof SAMPLE_TEXTS)[number]) => void;
 };
 
-const SampleTexts: React.FC<Props> = ({ onLoadSample }) => {
+const SampleTexts = ({ onLoadSample }: Props) => {
   return (
     <Card>
       <CardHeader>

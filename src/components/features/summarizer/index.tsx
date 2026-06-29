@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -15,10 +15,16 @@ import SummarizationIO from "./parts/SummarizationIO";
 import SampleTexts from "./parts/SampleTexts";
 import HistoryPanel from "./parts/HistoryPanel";
 import { useSummarizer } from "./hooks/useSummarizer";
+import { saveHistory } from "./hooks/summarizerState";
 
-export const SummarizerFeatureComponent: React.FC = () => {
+export const SummarizerFeatureComponent = () => {
   const { state, dispatch, summarizeText, copyToClipboard, modelDownloaded } =
     useSummarizer();
+
+  useEffect(() => {
+    saveHistory(state.summaryHistory);
+  }, [state.summaryHistory]);
+
   if (!state.isSupported) {
     return (
       <Card className="max-w-4xl mx-auto mt-10">

@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -27,7 +26,7 @@ type Props = {
   setSharedContext: (v: string) => void;
 };
 
-const SummarizationSettings: React.FC<Props> = ({
+const SummarizationSettings = ({
   summaryType,
   setSummaryType,
   summaryFormat,
@@ -38,7 +37,7 @@ const SummarizationSettings: React.FC<Props> = ({
   setStreamingMode,
   sharedContext,
   setSharedContext,
-}) => {
+}: Props) => {
   return (
     <Card>
       <CardHeader>
