@@ -58,7 +58,7 @@ const HistoryPanel: React.FC<Props> = ({ translationHistory }) => {
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="p-3 bg-gray-50 rounded">
+                    <div className="p-3 bg-muted rounded">
                       <p className="text-sm">{item.original}</p>
                     </div>
                     <div className="p-3 bg-muted rounded">
