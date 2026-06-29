@@ -115,7 +115,6 @@ chrome-ai-api-demo/
 │   ├── App.tsx                               # Main application
 │   ├── main.tsx                              # Entry point
 │   └── index.css                             # Global styles
-├── SUMMARIZER_README.md                      # Detailed Summarizer docs
 └── README.md                                 # This file
 ```
 
@@ -159,7 +158,6 @@ Each feature (translator, summarizer) is organized as follows:
 - Input quota management
 
 ### Summarizer Component
-See [SUMMARIZER_README.md](./SUMMARIZER_README.md) for comprehensive documentation.
 
 **Architecture:**
 - `useSummarizer` hook manages summarization state and API interactions
@@ -226,6 +224,23 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## Troubleshooting
+
+### "API Not Supported"
+- Confirm you're on Chrome 138+ (try Chrome Dev or Canary)
+- Ensure the relevant `chrome://flags` flag is enabled
+- Restart Chrome after enabling any flag
+
+### Model Download Stuck
+- Check your internet connection and available storage
+- For the Summarizer, open `chrome://components` and force-update "Optimization Guide On Device Model"
+- For the Translator, install language packs via `chrome://on-device-translation-internals/`
+
+### Poor Output Quality
+- Try a different summary type or length
+- Add guidance via the shared context field
+- Ensure the input text is well-structured and in a supported language
 
 ## Resources
 
